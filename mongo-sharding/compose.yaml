@@ -2,20 +2,21 @@ services:
 
   pymongo_api:
     container_name: pymongo_api
-    build: 
+    build:
       context: api_app
       dockerfile: Dockerfile
-    depends_on:
-      - mongo-sharding
     ports:
       - 8086:8080
+    networks:
+      - app-network
     environment:
-      MONGODB_URL: "mongodb://mongos-router:27020"
+      MONGODB_URL: "mongodb://mongo-sharding:27020"
       MONGODB_DATABASE_NAME: "somedb"
+    
 
-  configSrv:
+  config-srv:
     image: dh-mirror.gitverse.ru/mongo:latest
-    container_name: configSrv
+    container_name: config-srv
     restart: always
     ports:
       - "27017:27017"
@@ -37,9 +38,9 @@ services:
       interval: 5s
       start_period: 10s
 
-  mongos-router:
+  mongo-sharding:
     image: dh-mirror.gitverse.ru/mongo:latest
-    container_name: mongos-router
+    container_name: mongo-sharding
     restart: always
     ports:
       - "27020:27020"
@@ -55,21 +56,21 @@ services:
         "27020"
       ]
 
-  shard1:
+  shard-1:
     image: dh-mirror.gitverse.ru/mongo:latest
-    container_name: shard1
+    container_name: shard-1
     restart: always
     ports:
       - "27018:27018"
     networks:
       - app-network
     volumes:
-      - ./shard1-data:/data/db
+      - ./shard-1-data:/data/db
     command:
       [
         "--shardsvr",
         "--replSet",
-        "shard1",
+        "shard-1",
         "--bind_ip_all",
         "--port",
         "27018"
@@ -79,16 +80,16 @@ services:
       interval: 5s
       start_period: 10s
 
-  shard2:
+  shard-2:
     image: dh-mirror.gitverse.ru/mongo:latest
-    container_name: shard2
+    container_name: shard-2
     restart: always
     ports:
       - "27019:27019"
     networks:
       - app-network
     volumes:
-      - ./shard2-data:/data/db
+      - ./shard-2-data:/data/db
     command:
       [
         "--shardsvr",
@@ -110,5 +111,5 @@ networks:
 
 volumes:
   config-data:
-  shard1-data:
-  shard2-data:
+  shard-1-data:
+  shard-2-data:

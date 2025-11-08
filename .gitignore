@@ -1,1 +1,4 @@
 venv
+mongo-sharding/config-data/
+mongo-sharding/shard-1-data/
+mongo-sharding/shard-2-data/
