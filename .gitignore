@@ -9,3 +9,10 @@ mongo-sharding-repl/shard-2-primary-data/
 mongo-sharding-repl/shard-2-replica-1-data/
 mongo-sharding-repl/shard-2-replica-2-data/
 mongo-sharding-repl/config-data/
+sharding-repl-cache/config-data/
+sharding-repl-cache/shard-1-primary-data/
+sharding-repl-cache/shard-1-replica-1-data/
+sharding-repl-cache/shard-1-replica-2-data/
+sharding-repl-cache/shard-2-primary-data/
+sharding-repl-cache/shard-2-replica-1-data/
+sharding-repl-cache/shard-2-replica-2-data/

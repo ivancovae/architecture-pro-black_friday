@@ -1,0 +1,224 @@
+services:
+
+  pymongo_api:
+    container_name: pymongo_api
+    build:
+      context: api_app
+      dockerfile: Dockerfile
+    ports:
+      - 8086:8080
+    networks:
+      - app-network
+    environment:
+      MONGODB_URL: "mongodb://mongo-sharding-repl:27020"
+      MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis:6379"
+
+  config-srv:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: config-srv
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+    volumes:
+      - ./config-data:/data/db
+    command:
+      [
+        "--configsvr",
+        "--replSet",
+        "config-server",
+        "--bind_ip_all",
+        "--port",
+        "27017"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+
+  mongo-sharding-repl:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: mongo-sharding-repl
+    restart: always
+    ports:
+      - "27020:27020"
+    networks:
+      - app-network
+    command:
+      [
+        "mongos",
+        "--configdb",
+        "config-server/config-srv:27017",
+        "--bind_ip_all",
+        "--port",
+        "27020"
+      ]
+
+
+  # Шард 1 с репликами
+  shard-1-primary:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard-1-primary
+    restart: always
+    ports:
+      - "27018:27018"
+    networks:
+      - app-network
+    volumes:
+      - ./shard-1-primary-data:/data/db
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard-1",
+        "--bind_ip_all",
+        "--port",
+        "27018"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+
+  shard-1-replica-1:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard-1-replica-1
+    restart: always
+    ports:
+      - "27028:27018"
+    networks:
+      - app-network
+    volumes:
+      - ./shard-1-replica-1-data:/data/db
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard-1",
+        "--bind_ip_all",
+        "--port",
+        "27018"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+    depends_on:
+      - shard-1-primary
+
+  shard-1-replica-2:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard-1-replica-2
+    restart: always
+    ports:
+      - "27038:27018"
+    networks:
+      - app-network
+    volumes:
+      - ./shard-1-replica-2-data:/data/db
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard-1",
+        "--bind_ip_all",
+        "--port",
+        "27018"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+    depends_on:
+      - shard-1-primary
+
+  # Шард 2 с репликами
+  shard-2-primary:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard-2-primary
+    restart: always
+    ports:
+      - "27019:27019"
+    networks:
+      - app-network
+    volumes:
+      - ./shard-2-primary-data:/data/db
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard-2",
+        "--bind_ip_all",
+        "--port",
+        "27019"
+      ]
+
+  shard-2-replica-1:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard-2-replica-1
+    restart: always
+    ports:
+      - "27029:27019"
+    networks:
+      - app-network
+    volumes:
+      - ./shard-2-replica-1-data:/data/db
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard-2",
+        "--bind_ip_all",
+        "--port",
+        "27019"
+      ]
+    depends_on:
+      - shard-2-primary
+
+  shard-2-replica-2:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard-2-replica-2
+    restart: always
+    ports:
+      - "27039:27019"
+    networks:
+      - app-network
+    volumes:
+      - ./shard-2-replica-2-data:/data/db
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard-2",
+        "--bind_ip_all",
+        "--port",
+        "27019"
+      ]
+    depends_on:
+      - shard-2-primary
+
+  redis:
+    image: redis:latest
+    restart: always
+    container_name: redis
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PORT=6379
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  config-data:
+  shard-1-primary-data:
+  shard-1-replica-1-data:
+  shard-1-replica-2-data:
+  shard-2-primary-data:
+  shard-2-replica-1-data:
+  shard-2-replica-2-data:
