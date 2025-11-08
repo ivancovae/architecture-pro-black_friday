@@ -2,3 +2,10 @@ venv
 mongo-sharding/config-data/
 mongo-sharding/shard-1-data/
 mongo-sharding/shard-2-data/
+mongo-sharding-repl/shard-1-primary-data/
+mongo-sharding-repl/shard-1-replica-1-data/
+mongo-sharding-repl/shard-1-replica-2-data/
+mongo-sharding-repl/shard-2-primary-data/
+mongo-sharding-repl/shard-2-replica-1-data/
+mongo-sharding-repl/shard-2-replica-2-data/
+mongo-sharding-repl/config-data/
