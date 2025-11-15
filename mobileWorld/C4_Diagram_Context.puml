@@ -1,0 +1,47 @@
+@startuml C4_Context_Diagram
+
+skinparam defaultTextAlignment center
+
+set separator none
+
+title MongoDb Cluster Diagram
+
+top to bottom direction
+
+!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
+!include $ICONURL/common.puml
+
+!include $ICONURL/devicons/postgresql.puml
+!include $ICONURL/font-awesome/server.puml
+!include $ICONURL/font-awesome-5/database.puml
+
+!include <C4/C4_Container>
+
+
+Enterprise_Boundary("App_Boundary", "App") {
+    Person(Pymongo_api, "Приложение (pymongo-api)", "Отправляет запросы к MongoDB через драйвер")
+
+    System_Boundary(MongoDb_Cluster, "MongoDB Cluster") {
+        Container(Mongos_router, "mongos router", "MongoDB router", "Маршрутизирует запросы к шардам")
+        Container(MongoDb_shard1, "Shard 1", "MongoDB instance", "Часть данных")
+        Container(MongoDb_shard2, "Shard 2", "MongoDB instance", "Часть данных")
+        Container(MongoDb_shardN, "Shard N", "MongoDB instance", "Часть данных")
+    }
+
+    System_Boundary(Logic_Struct, "Логическая структура коллекций") {
+        ContainerDb(Collection_orders, "orders", "Collection", "Шард-ключ: { user_id, created_at }")
+        ContainerDb(Collection_products, "products", "Collection", "Шард-ключ: { category, _id: hashed }")
+        ContainerDb(Collection_carts, "carts", "Collection", "Шард-ключ: { owner_key: hashed }")
+    }
+}
+
+Rel(Pymongo_api, Mongos_router, "Запросы к коллекциям", "MongoDB Driver")
+Rel(Mongos_router, MongoDb_shard1, "распределённые данные")
+Rel(Mongos_router, MongoDb_shard2, "распределённые данные")
+Rel(Mongos_router, MongoDb_shardN, "распределённые данные")
+
+Rel(Mongos_router, Collection_orders, "чтение/запись заказов")
+Rel(Mongos_router, Collection_products, "чтение/обновление товаров")
+Rel(Mongos_router, Collection_carts, "операции с корзинами")
+
+@enduml
