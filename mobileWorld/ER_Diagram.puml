@@ -1,0 +1,55 @@
+@startuml ER_Diagram_Mobile_World
+
+title "Мобильный мир — схема данных MongoDB (ER-Диаграмма)"
+
+class orders <<collection>> {
+  _id : string  // "u:<user_id>:<ObjectId>"
+  user_id : ObjectId
+  created_at : datetime
+  items : array<{ product_id:ObjectId, qty:int, price:decimal }>
+  status : string  // placed | paid | shipped | delivered | canceled | refunded
+  total : decimal
+  geozone : string
+  shipping : document
+  --
+  <<Shard Key>> { user_id: 1, created_at: 1 }
+  <<Index>> { user_id: 1, created_at: -1 }
+  <<Index>> { status: 1, created_at: -1 }
+}
+
+class products <<collection>> {
+  _id : ObjectId
+  sku : string <<unique>>   // идентификатор товарной позиции
+  name : string
+  category : string
+  price : decimal
+  attributes : map
+  stock : map<geozone,int>
+  updated_at : datetime
+  --
+  <<Shard Key>> { category: 1, _id: "hashed" }
+  <<Index>> { category: 1, price: 1 }
+  <<Index>> { name: "text" }
+}
+
+class carts <<collection>> {
+  _id : ObjectId
+  owner_key : string  // "u:<user_id>" | "s:<session_id>"
+  user_id : ObjectId?
+  session_id : string?
+  items : array<{ product_id:ObjectId, quantity:int }>
+  status : string  // active | ordered | abandoned
+  created_at : datetime
+  updated_at : datetime
+  expires_at : datetime  // TTL
+  --
+  <<Shard Key>> { owner_key: "hashed" }
+  <<Index TTL>> { expires_at: 1 } expireAfterSeconds=0
+  <<Index Partial Unique>> { owner_key: 1, status: 1 } where { status:"active" }
+}
+
+orders "0..*" --> "1" products : items[].product_id
+orders "0..*" ..> "0..1" carts : originates from (optional)
+carts  "0..*" --> "1" products : items[].product_id
+
+@enduml

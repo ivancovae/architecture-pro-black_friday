@@ -1,0 +1,69 @@
+@startuml C4_Container_Diagram
+
+skinparam defaultTextAlignment center
+
+set separator none
+
+title MongoDb Cluster Diagram - Containers
+
+top to bottom direction
+
+!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
+!include $ICONURL/common.puml
+!include $ICONURL/devicons/dotnet.puml
+!include $ICONURL/devicons2/csharp.puml
+
+!include $ICONURL/devicons/postgresql.puml
+!include $ICONURL/font-awesome/server.puml
+!include $ICONURL/font-awesome-5/database.puml
+
+!include <C4/C4_Container>
+
+Boundary(boundaryUsers, "<person>") {
+    Person(user, "Покупатель", "User")
+}
+
+Boundary(boundaryChanals, "<Chanals>") {
+    Container(WebApplication, "Web SPA", $descr="Web приложение")
+    Container(MobileApplication, "Mobile Application", $descr="Мобильное приложение")
+}
+
+Container(APIGateway, "API Gateway", $descr="API Gateway")
+
+Boundary(boundaryServices, "<Domain Services>") {
+    Container(CatalogAPI, "Catalog API")
+    Container(CartAPI, "Cart API")
+    Container(OrderAPI, "Order API")
+}
+
+Boundary(boundaryMongoDBCluster, "<MongoDB Cluster>") {
+    Container(MongosRouter, "Mongos (router xN)")
+
+    Boundary(boundaryShards, "<Shards (реплика-сеты)>") {
+        Container(Shard1, "Shard 1")
+        Container(Shard2, "Shard 2")
+        Container(ShardN, "Shard N")
+    }
+    Container(ConfigServers, "Config Servers")
+}
+
+Rel(user, WebApplication, "")
+Rel(user, MobileApplication, "")
+
+Rel(WebApplication, APIGateway, "")
+Rel(MobileApplication, APIGateway, "")
+
+Rel(APIGateway, CatalogAPI, "")
+Rel(APIGateway, CartAPI, "")
+Rel(APIGateway, OrderAPI, "")
+
+
+Rel(CatalogAPI, MongosRouter, "")
+Rel(CartAPI, MongosRouter, "")
+Rel(OrderAPI, MongosRouter, "")
+Rel(MongosRouter, Shard1, "")
+Rel(MongosRouter, Shard2, "")
+Rel(MongosRouter, ShardN, "")
+Rel(MongosRouter, ConfigServers, "")
+
+@enduml
